@@ -1,5 +1,7 @@
 from sklearn import datasets
-import numpy as np
+import numpy
+from os import listdir
+from os.path import isfile, join
 import csv
 import cv2
 
@@ -8,40 +10,36 @@ import cv2
 # each list equals one row in the final csv output file
 # output csv file
 
-# Load Input Image
-inputImage = cv2.imread('/Users/patrickmohr/Code/Python/imageDataExtractor/resources/test2.jpg', 1)
-gray = cv2.cvtColor(inputImage, cv2.COLOR_BGR2GRAY)
-imageHeight, imageWidth, numberOfColorChannels = inputImage.shape
+dataCSV = open('imageData.csv', 'w')
+writer = csv.writer(dataCSV, dialect='excel')
 
-# Image Height & Width --------------
-imageHeight, imageWidth = inputImage.shape[:2]
-print "y:", imageHeight, "x:", imageWidth
+# Load Input Images
+imageFolder='/Users/patrickmohr/Code/Python/runtimeEstimation/resources/images/'
+onlyFiles = [f for f in listdir(imageFolder) if isfile(join(imageFolder, f))]
+inputImages = numpy.empty(len(onlyFiles), dtype=object)
+#inputImagesGrey = numpy.empty(len(onlyFiles), dtype=object)
 
-# Resolution ------------------------
-imageResolution = imageHeight * imageWidth
-print "Resolution:", imageResolution
+for n in range(0, len(onlyFiles)):
+  inputImages[n] = cv2.imread(join(imageFolder, onlyFiles[n]), 1)
+  #inputImagesGrey[n] = cv2.cvtColor(join(imageFolder, onlyFiles[n]), cv2.COLOR_BGR2GRAY)
 
-# File Size -------------------------
+# Extract Params
+for n in range(0, len(inputImages)):
+    imageHeight, imageWidth, numberOfColorChannels = inputImages[n].shape
 
-# Bit Depth -------------------------
-bitDepth = inputImage.dtype
-if bitDepth == 'uint8':
-    bitDepth = 8 * numberOfColorChannels
-elif bitDepth == 'uint16':
-    bitDepth = 16 * numberOfColorChannels
-print "Bit depth:", bitDepth
+    resolution = imageHeight * imageWidth
 
-# Feature Detection
-sift = cv2.SIFT()
-keyPoints = sift.detect(inputImage, None)
-numberOfKeypoints = len(keyPoints)
-print "Keypoints:", numberOfKeypoints
-# sift evtl. als teil der grun
+    bitDepth = inputImages[n].dtype
+    if bitDepth == 'uint8':
+        bitDepth = 8 * numberOfColorChannels
+    elif bitDepth == 'uint16':
+        bitDepth = 16 * numberOfColorChannels
 
-# Compression -----------------------
+    sift = cv2.SIFT() # sift evtl. als teil der grun
+    keyPoints = sift.detect(inputImages[n], None)
+    numberOfKeypoints = len(keyPoints)
 
-# Write CSV-File --------------------
-RESULTS = [[imageHeight, imageWidth, imageResolution, bitDepth, numberOfKeypoints]]
-with open("imageData.csv", 'wb') as resultFile:
-    wr = csv.writer(resultFile)
-    wr.writerows(RESULTS)
+    RESULTS = ([imageHeight, imageWidth, resolution, bitDepth, numberOfKeypoints])
+    writer.writerow(RESULTS)
+
+
